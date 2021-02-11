@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>	/* for atof */
+#include <math.h>
 
 #define MAXOP	100	/* max size of operand or operator */
 #define NUMBER	'0'	/* signal that a number was found */
+#define EXP	'1'	/* signal that a exponent is found */
+#define SIN	'2'	/* signal that a sine is found */
+#define POW	'3'	/* signal that a power is found */
 
 int getop(char []);
 void push(double);
@@ -37,6 +41,23 @@ main()
             else
                 printf("error: zero divisor\n");
             break;
+        case '%':
+            op2 = pop();
+            if (op2 != 0.0)
+                push((int) pop() % op2);
+            else
+                printf("error: zero divisor");
+            break;
+        case EXP:
+            push(exp(pop()));
+            break;
+        case SIN:
+            push(sin(pop()));
+            break;
+        case POW:
+            op2 = pop();
+            push(pow(pop(), op2));
+            break;            
         case '\n':
             printf("\t%.8g\n", pop());
             break;
@@ -74,6 +95,30 @@ double pop(void)
     }
 }
 
+/* peek: print the top element of stack without popping */
+void peek(void)
+{
+    if (sp > 0)
+        printf("%g\n", val[sp-1]);
+    else
+        printf("error: stack empty\n");
+}
+
+/* swap: swap the top two element of stack */
+void swap(void)
+{
+    double top = pop();
+    double second = pop();
+    push(top);
+    push(second);
+}
+
+/* clrstack: clear the stack */
+void clrstack(void)
+{
+    sp = 0;
+}
+
 
 #include <ctype.h>
 
@@ -83,14 +128,26 @@ void ungetch(int);
 /* get next character or numeric operand */
 int getop(char s[])
 {
-    int i, c;
+    int i, c, tmp;
     
     while ((s[0] = c = getch()) == ' ' || c == '\t')
         ;
     s[1] = '\0';
-    if (!isdigit(c) && c != '.')
-        return c;	/* not a number */
     i = 0;
+    if (!isdigit(c) && c != '.') {
+        if (c == '-') {
+            if (isdigit(c = getch())) {	/* if the next character is a digit */
+                s[i] = '-';		/* treat it as a part of number */
+                ungetch(c);		/* push the digit back */
+            }
+            else {
+                ungetch(c);
+                return '-';
+            }
+        }
+        else
+            return c;
+    }
     if (isdigit(c))	/* collect integer part */
         while (isdigit(s[++i] = c = getch()))
             ;
@@ -106,18 +163,32 @@ int getop(char s[])
 
 #define BUFSIZE	100
 
-char buf[BUFSIZE];	/* buffer for ungetch */
-int bufp = 0;		/* next free position in buf */
+int buf = EOF;		/* for storing a pushed back variable */
 
 int getch(void)		/* get a (possibly pushed-back) character */
 {
-    return (bufp > 0) ? buf[--bufp] : getchar();
+    int temp;
+    if (buf != EOF) {
+        temp = buf;
+        buf = EOF;
+        return temp;
+    }
+    else
+        return getchar();
 }
 
 void ungetch(int c)	/* push character back on input */
 {
-    if (bufp >= BUFSIZE)
-        printf("ungetch: too many characters\n");
-    else
-        buf[bufp++] = c;
+    buf = c;
+}
+
+/* ungets: push an entire string back on input */
+void ungets(char s[])
+{
+    int i = 0;
+    
+    while (s[i+1] != '\0')
+        i++;
+    while (i >= 0)
+        ungetch(s[i--]);
 }
