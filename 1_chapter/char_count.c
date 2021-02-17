@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #define MAXCHAR 100	/* maximum characters allowed in input */
-#define MAXFREQ 100	/* maximum frequency of a single character */
+#define MAXFREQ 30	/* maximum frequency of a single character */
 
 /* prints a histogram of frequency of different characters in input */
 main()
